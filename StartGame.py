@@ -1,5 +1,7 @@
 import numpy as np
 import pygame as game
+import pytmx
+
 from scripts.TileSet import Tileset
 from scripts.Player import Player
 from scripts.Camera import Camera
@@ -14,7 +16,9 @@ SCREEN_HEIGHT = ROWS * TILE_SIZE
 screen = game.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 clock = game.time.Clock()
 
-overWorld_tileset = Tileset("assets/TILESET_V1.png", TILE_SIZE, TILE_SIZE)
+tiled_map = pytmx.load_pygame("assets/Adventure Game Map.tmx", pixelalpha=True)
+
+#overWorld_tileset = Tileset("assets/TILESET_V1.png", TILE_SIZE, TILE_SIZE)
 
 def create_tilemap():
     tilemap = np.zeros((ROWS, COLS), dtype=int)
@@ -27,8 +31,8 @@ def create_tilemap():
     return tilemap
 
 TEXTURE_MAPPING = {
-    0: overWorld_tileset.get_tile(1, 6),  # Grass
-    1: overWorld_tileset.get_tile(0, 0),  # Wall
+ #   0: overWorld_tileset.get_tile(1, 6),  # Grass
+  #  1: overWorld_tileset.get_tile(0, 0),  # Wall
 }
 
 # Create entities once before the loop
@@ -53,15 +57,13 @@ while running:
     screen.fill((0, 0, 123))
 
     # 4. Draw Tiles (WITH camera offset applied so they scroll!)
-    for y, row in enumerate(fixed_tilemap):
-        for x, cell in enumerate(row):
-            world_pos = (x * TILE_SIZE, y * TILE_SIZE)
-            screen_pos = camera.apply(world_pos)
-            
-            if cell == 1:
-                screen.blit(TEXTURE_MAPPING[1], screen_pos)
-            elif cell == 0:
-                screen.blit(TEXTURE_MAPPING[0], screen_pos)
+    for layer in tiled_map.visible_layers:
+        if isinstance(layer, pytmx.TiledTileLayer):
+            for x, y, gid in layer:
+                tile_image = tiled_map.get_tile_image_by_gid(gid)
+                if tile_image:
+                # Apply your camera offset and blit!
+                    screen.blit(tile_image, camera.apply((x * TILE_SIZE, y * TILE_SIZE)))
 
     # 5. Draw Player (Player class handles its own camera offset)
     player.draw(screen, camera)
